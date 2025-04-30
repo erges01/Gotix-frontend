@@ -5,19 +5,30 @@
 import { useState } from "react";
 import { toast } from "react-toastify";
 
-interface BuyTicketProps {
-  eventId: string;
-  ticketTypes: any[];
-  checkoutQuestions: any[];
+interface TicketType {
+  type: string;
+  price: number;
+  quantityAvailable: number;
 }
 
-export default function BuyTicket({ eventId, ticketTypes, checkoutQuestions }: BuyTicketProps) {
-  const [selectedTickets, setSelectedTickets] = useState<any[]>([]);
+interface CheckoutQuestion {
+  question: string;
+  type: string;
+}
+
+interface BuyTicketProps {
+  eventId: string;
+  ticketTypes: TicketType[];
+  checkoutQuestions: CheckoutQuestion[];
+}
+
+export default function BuyTicket({ eventId, ticketTypes = [], checkoutQuestions = [] }: BuyTicketProps) {
+  const [selectedTickets, setSelectedTickets] = useState<TicketType[]>([]);
   const [checkoutInfo, setCheckoutInfo] = useState({
     fullName: "",
     email: "",
     phone: "",
-    answers: checkoutQuestions?.map(() => "") || [],
+    answers: checkoutQuestions.map(() => ""),
   });
 
   const handleTicketChange = (type: string, quantity: number) => {
@@ -26,7 +37,7 @@ export default function BuyTicket({ eventId, ticketTypes, checkoutQuestions }: B
       if (exists) {
         return prev.map((t) => (t.type === type ? { ...t, quantity } : t));
       }
-      return [...prev, { type, quantity }];
+      return [...prev, { type, quantity, price: 0, quantityAvailable: 0 }];
     });
   };
 
@@ -60,7 +71,7 @@ export default function BuyTicket({ eventId, ticketTypes, checkoutQuestions }: B
 
       const data = await res.json();
 
-      if (!res.ok) throw new Error(data.message || "Error creating order");
+      if (!res.ok) throw new Error(data?.message || "Error creating order");
 
       toast.success("Order Created!");
 
@@ -69,8 +80,12 @@ export default function BuyTicket({ eventId, ticketTypes, checkoutQuestions }: B
       } else {
         window.location.reload();
       }
-    } catch (err: any) {
-      toast.error(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        toast.error(err.message);
+      } else {
+        toast.error("An unexpected error occurred");
+      }
     }
   };
 
