@@ -1,18 +1,21 @@
+// tailwind.config.ts
 import type { Config } from "tailwindcss";
 
-export default {
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+const config: Config = {
+  content: ["./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        primary: "#0099FF", // Thunder Client Blue
+        dark: "#2D2D2D", // Dark Gray
+        background: "#1E1E1E", // Background Black
+        accent: "#007ACC", // Light Blue Accent
+        white: "#FFFFFF",
+        muted: "#BBBBBB",
       },
     },
   },
   plugins: [],
-} satisfies Config;
+};
+
+export default config;
