@@ -1,128 +1,93 @@
-// src/app/(public)/e/[customURL]/BuyTicket.tsx
+// src/app/(public)/e/[customURL]/page.tsx
 
 "use client";
 
-import { useState } from "react";
-import { toast } from "react-toastify";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
+import BuyTicket from "./BuyTicket";
 
-interface TicketType {
-  type: string;
-  price: number;
-  quantityAvailable: number;
+interface EventData {
+  _id: string;
+  title: string;
+  description: string;
+  location: string;
+  dates: string[];
+  timeSlots: string[];
+  ticketTypes: {
+    type: string;
+    price: number;
+    quantityAvailable: number;
+  }[];
+  checkoutQuestions: {
+    question: string;
+    type: string;
+  }[];
+  imageUrl?: string;
 }
 
-interface CheckoutQuestion {
-  question: string;
-  type: string;
-}
+export default function EventPublicPage() {
+  const params = useParams();
+  const router = useRouter();
+  const { customURL } = params as { customURL: string };
 
-interface BuyTicketProps {
-  eventId: string;
-  ticketTypes: TicketType[];
-  checkoutQuestions: CheckoutQuestion[];
-}
+  const [event, setEvent] = useState<EventData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-export default function BuyTicket({ eventId, ticketTypes = [], checkoutQuestions = [] }: BuyTicketProps) {
-  const [selectedTickets, setSelectedTickets] = useState<TicketType[]>([]);
-  const [checkoutInfo, setCheckoutInfo] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    answers: checkoutQuestions.map(() => ""),
-  });
+  useEffect(() => {
+    const fetchEvent = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/events/url/${customURL}`);
+        const data = await res.json();
 
-  const handleTicketChange = (type: string, quantity: number) => {
-    setSelectedTickets((prev) => {
-      const exists = prev.find((t) => t.type === type);
-      if (exists) {
-        return prev.map((t) => (t.type === type ? { ...t, quantity } : t));
+        if (!res.ok) {
+          throw new Error(data?.message || "Event not found");
+        }
+
+        setEvent(data);
+      } catch (err: unknown) {
+        if (err instanceof Error) setError(err.message);
+        else setError("An unexpected error occurred");
+      } finally {
+        setLoading(false);
       }
-      return [...prev, { type, quantity, price: 0, quantityAvailable: 0 }];
-    });
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCheckoutInfo({ ...checkoutInfo, [e.target.name]: e.target.value });
-  };
-
-  const handleAnswerChange = (idx: number, value: string) => {
-    const newAnswers = [...checkoutInfo.answers];
-    newAnswers[idx] = value;
-    setCheckoutInfo({ ...checkoutInfo, answers: newAnswers });
-  };
-
-  const handleSubmit = async () => {
-    if (!checkoutInfo.fullName || !checkoutInfo.email || !checkoutInfo.phone) {
-      return toast.error("Fill all required fields");
-    }
-
-    const payload = {
-      eventId,
-      tickets: selectedTickets,
-      checkoutInfo,
     };
 
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    if (customURL) fetchEvent();
+  }, [customURL]);
 
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data?.message || "Error creating order");
-
-      toast.success("Order Created!");
-
-      if (data.paymentLink) {
-        window.location.href = data.paymentLink;
-      } else {
-        window.location.reload();
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        toast.error(err.message);
-      } else {
-        toast.error("An unexpected error occurred");
-      }
-    }
-  };
+  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  if (error) return <div className="p-8 text-red-500 text-center">{error}</div>;
+  if (!event) return null;
 
   return (
-    <div className="space-y-4">
-      <h2 className="font-bold text-lg text-[#1E1E1E]">Select Tickets</h2>
-      {ticketTypes.map((t, idx) => (
-        <div key={idx} className="border p-2 rounded text-[#1E1E1E]">
-          <div className="flex justify-between items-center">
-            <span>{t.type.toUpperCase()} - ₦{t.price}</span>
-            <input
-              type="number"
-              min={0}
-              onChange={(e) => handleTicketChange(t.type, parseInt(e.target.value))}
-              className="w-16 border rounded text-center text-[#1E1E1E]"
-            />
-          </div>
+    <div className="min-h-screen bg-[#FAF9F6] p-8 text-[#1E1E1E]">
+      <div className="max-w-2xl mx-auto space-y-6">
+        <h1 className="text-3xl font-extrabold text-[#DDB892] text-center">{event.title}</h1>
+        <p className="text-center text-sm text-[#6B6B6B]">{event.description}</p>
+
+        <div className="border rounded p-4 text-sm">
+          <p><b>Location:</b> {event.location}</p>
+          <p><b>Dates:</b> {event.dates.join(", ")}</p>
+          <p><b>Time:</b> {event.timeSlots.join(", ")}</p>
         </div>
-      ))}
 
-      <h2 className="font-bold text-lg text-[#1E1E1E] mt-4">Your Details</h2>
-      <input type="text" name="fullName" placeholder="Full Name" onChange={handleInputChange} className="w-full border p-2 rounded text-[#1E1E1E]" />
-      <input type="email" name="email" placeholder="Email" onChange={handleInputChange} className="w-full border p-2 rounded text-[#1E1E1E]" />
-      <input type="tel" name="phone" placeholder="Phone Number" onChange={handleInputChange} className="w-full border p-2 rounded text-[#1E1E1E]" />
+        {event.imageUrl && (
+          <img
+            src={event.imageUrl}
+            alt="Event Banner"
+            className="rounded-lg w-full object-cover h-48"
+          />
+        )}
 
-      {checkoutQuestions.length > 0 && (
-        <div className="mt-4">
-          <h2 className="font-bold text-lg text-[#1E1E1E]">Extra Questions</h2>
-          {checkoutQuestions.map((q, idx) => (
-            <input key={idx} type="text" placeholder={q.question} className="w-full border p-2 rounded mt-2 text-[#1E1E1E]" onChange={(e) => handleAnswerChange(idx, e.target.value)} />
-          ))}
-        </div>
-      )}
-
-      <button onClick={handleSubmit} className="w-full bg-[#DDB892] py-3 rounded-lg font-bold mt-4 text-[#1E1E1E]">
-        Buy Ticket
-      </button>
+        <BuyTicket
+          eventId={event._id}
+          ticketTypes={event.ticketTypes}
+          checkoutQuestions={event.checkoutQuestions}
+        />
+      </div>
     </div>
   );
 }
