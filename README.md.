@@ -1,0 +1,25 @@
+# Gotix Frontend
+
+A ticketing platform frontend built with **Next.js**. This project is part of a full-stack clone that allows users to browse and book events.
+
+## Features
+
+- Modern UI with React & Next.js
+- User authentication (sign up & log in)
+- Event listings and detail pages
+- Booking flow integration
+- API communication with backend services
+
+## Tech Stack
+
+- Next.js
+- React
+- Tailwind CSS (or your styling choice)
+- Axios
+- Context API (or Redux, if used)
+
+## Getting Started
+
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/erges01/Gotix-frontend.git
